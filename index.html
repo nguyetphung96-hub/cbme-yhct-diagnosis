@@ -1,9 +1,977 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="refresh" content="0; url=/frontend/index.html" />
-    <title>CBME YHCT Diagnosis</title>
-  </head>
-  <body></body>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CBME – Chẩn đoán hội chứng YHCT (Tứ chẩn)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#b6c0ffb3;
+      --line:#26335f;
+      --accent:#7aa2ff;
+      --accent2:#8bf0c1;
+      --danger:#ff6b8a;
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(122,162,255,.18), transparent 60%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(139,240,193,.10), transparent 55%),
+                  radial-gradient(900px 600px at 50% 100%, rgba(255,107,138,.08), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      min-height:100vh;
+      padding: 28px 16px 48px;
+    }
+    .wrap{max-width:1080px;margin:0 auto;}
+    header{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
+      margin-bottom:18px;
+    }
+    .title{display:flex;flex-direction:column;gap:6px;}
+    h1{margin:0;font-size:22px;letter-spacing:.2px;}
+    .subtitle{margin:0;color:var(--muted);font-size:13px;line-height:1.4;max-width:80ch;}
+    .tabs{
+      display:flex; gap:10px;
+      background: rgba(18,26,51,.55);
+      border: 1px solid rgba(38,51,95,.65);
+      padding: 8px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+    }
+    .tab-btn{
+      appearance:none; border:0; background:transparent;
+      color:var(--muted);
+      padding:10px 14px; border-radius:999px;
+      font-weight:700; font-size:13px;
+      cursor:pointer; transition:.2s ease;
+      display:flex;align-items:center;gap:8px;
+      user-select:none;
+    }
+    .tab-btn:hover{color:var(--text); background: rgba(122,162,255,.10);}
+    .tab-btn[aria-selected="true"]{
+      background: linear-gradient(135deg, rgba(122,162,255,.22), rgba(139,240,193,.14));
+      color: var(--text);
+      border: 1px solid rgba(122,162,255,.25);
+    }
+    .panel{margin-top:16px; display:none; animation: fadeIn .18s ease-out;}
+    .panel.active{display:block;}
+    @keyframes fadeIn{from{opacity:.4; transform: translateY(4px);} to{opacity:1; transform: translateY(0);} }
+
+    .grid{display:grid; grid-template-columns: 1fr 1fr; gap:14px;}
+    @media (max-width: 980px){
+      header{flex-direction:column; align-items:flex-start}
+      .tabs{width:100%}
+      .grid{grid-template-columns:1fr;}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(18,26,51,.85), rgba(15,23,48,.85));
+      border: 1px solid rgba(38,51,95,.75);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:15px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      color:var(--text);
+      background: rgba(122,162,255,.14);
+      border: 1px solid rgba(122,162,255,.22);
+    }
+
+    .form{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
+    .form .full{grid-column:1 / -1;}
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px;}
+    input, select, textarea{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: rgba(8,12,26,.65);
+      border: 1px solid rgba(38,51,95,.75);
+      color: var(--text);
+      outline:none;
+      transition:.15s ease;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(122,162,255,.6);
+      box-shadow: 0 0 0 3px rgba(122,162,255,.14);
+    }
+    textarea{min-height:120px; resize: vertical; line-height: 1.5;}
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px;}
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(38,51,95,.85);
+      background: rgba(122,162,255,.14);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor:pointer;
+      transition:.15s ease;
+      display:inline-flex;align-items:center;gap:10px;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(122,162,255,.55);}
+    .btn.secondary{background: rgba(182,192,255,.08);}
+    .btn.danger{background: rgba(255,107,138,.12); border-color: rgba(255,107,138,.35);}
+    .hint{color: var(--muted); font-size:12px; line-height:1.4; margin:6px 0 0;}
+
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(38,51,95,.75);
+      background: rgba(8,12,26,.55);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+
+    .subtabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin: 2px 0 12px;
+    }
+    .chip{
+      border:1px solid rgba(38,51,95,.75);
+      background: rgba(8,12,26,.45);
+      color: var(--muted);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      transition:.15s ease;
+    }
+    .chip.active{
+      color: var(--text);
+      background: rgba(122,162,255,.14);
+      border-color: rgba(122,162,255,.35);
+    }
+
+    .block{display:none;}
+    .block.active{display:block;}
+
+    .vancard{
+      border: 1px solid rgba(38,51,95,.75);
+      background: rgba(8,12,26,.45);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    /* Vấn chẩn items */
+    .sym-toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
+    .sym-list{display:grid; gap:10px; margin-top:10px;}
+    .sym-item{
+      border: 1px solid rgba(38,51,95,.75);
+      background: rgba(8,12,26,.45);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .sym-head{
+      display:flex; gap:10px; justify-content:space-between; align-items:flex-start;
+      margin-bottom:10px;
+    }
+    .sym-name{
+      font-weight:800; font-size:13px; margin:0;
+    }
+    .sym-actions{display:flex; gap:8px;}
+    .icon-btn{
+      appearance:none;
+      border: 1px solid rgba(38,51,95,.75);
+      background: rgba(182,192,255,.08);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 800;
+      cursor:pointer;
+    }
+    .sym-grid{
+      display:grid;
+      grid-template-columns: 1.2fr .6fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 980px){
+      .sym-grid{grid-template-columns:1fr;}
+    }
+
+    /* Output */
+    .result-top{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; margin-bottom:12px;}
+    .diag{
+      border-left: 3px solid rgba(139,240,193,.75);
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(139,240,193,.06);
+      border: 1px solid rgba(139,240,193,.18);
+      margin-top: 10px;
+    }
+    .diag h3{margin:0 0 6px;font-size:14px;}
+    .diag p{margin:0;color:var(--text);line-height:1.55;font-size:13px;}
+    .list{margin: 10px 0 0; padding: 0; list-style: none; display:grid; gap:10px;}
+    .item{
+      border: 1px solid rgba(38,51,95,.75);
+      background: rgba(8,12,26,.55);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .item .k{
+      font-weight: 900; font-size: 13px;
+      margin:0 0 6px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .score{
+      font-size: 12px;
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(122,162,255,.16);
+      border: 1px solid rgba(122,162,255,.28);
+      white-space: nowrap;
+    }
+    .item .v{margin:0; color: var(--muted); font-size: 12px; line-height: 1.45;}
+    .warn{
+      border-left: 3px solid rgba(255,107,138,.75);
+      background: rgba(255,107,138,.06);
+      border: 1px solid rgba(255,107,138,.18);
+      padding: 10px 12px;
+      border-radius: 14px;
+      margin-top: 12px;
+    }
+    .warn b{color: var(--text);}
+    footer{margin-top: 16px; color: rgba(182,192,255,.65); font-size: 12px; line-height:1.45;}
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>CBME – Hướng dẫn chẩn đoán hội chứng YHCT (Tứ chẩn)</h1>
+      <p class="subtitle">
+        Tab 1: nhập hồ sơ + Tứ chẩn (Vọng/Văn/Vấn/Thiết). Tab 2: kết quả suy luận.
+        Nút “Suy luận” gọi <span class="mono">POST /infer</span> (mock) — sau này thay bằng RAG/KG/ILP.
+      </p>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Tabs">
+      <button class="tab-btn" id="tab-input" role="tab" aria-selected="true" aria-controls="panel-input">📝 Nhập liệu</button>
+      <button class="tab-btn" id="tab-output" role="tab" aria-selected="false" aria-controls="panel-output">🧠 Chẩn đoán</button>
+    </nav>
+  </header>
+
+  <!-- TAB 1 -->
+  <section class="panel active" id="panel-input" role="tabpanel" aria-labelledby="tab-input">
+    <div class="grid">
+      <!-- KHUNG 1 -->
+      <div class="card">
+        <h2>Khung 1: Thông tin người bệnh <span class="badge">Bắt buộc tối thiểu: họ tên + tuổi + giới</span></h2>
+
+        <div class="form">
+          <div class="full">
+            <label for="name">Họ tên</label>
+            <input id="name" type="text" placeholder="Ví dụ: Nguyễn Văn A" />
+          </div>
+
+          <div>
+            <label for="age">Tuổi</label>
+            <input id="age" type="number" min="0" max="130" placeholder="Ví dụ: 45" />
+          </div>
+
+          <div>
+            <label for="sex">Giới</label>
+            <select id="sex">
+              <option value="">-- Chọn --</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="weight">Cân nặng (kg)</label>
+            <input id="weight" type="number" min="0" step="0.1" placeholder="Ví dụ: 60" />
+          </div>
+
+          <div>
+            <label for="height">Chiều cao (cm)</label>
+            <input id="height" type="number" min="0" step="0.1" placeholder="Ví dụ: 165" />
+          </div>
+
+          <div class="full">
+            <label for="job">Nghề nghiệp</label>
+            <input id="job" type="text" placeholder="Ví dụ: Giáo viên / Nhân viên văn phòng / Lao động..." />
+            <p class="hint">Gợi ý: có thể dùng để phân tích yếu tố nguy cơ (thói quen, đứng/ngồi nhiều...).</p>
+          </div>
+        </div>
+
+        <div class="row">
+          <button class="btn secondary" id="btnFillDemo" type="button">⚡ Điền dữ liệu mẫu</button>
+          <button class="btn danger" id="btnClear" type="button">🧹 Xoá dữ liệu</button>
+        </div>
+      </div>
+
+      <!-- KHUNG 2 -->
+      <div class="card">
+        <h2>Khung 2: Tứ chẩn <span class="badge">CBME input schema</span></h2>
+
+        <div class="subtabs" role="tablist" aria-label="Tứ chẩn">
+          <button class="chip active" type="button" data-block="block-vong">👁️ Vọng</button>
+          <button class="chip" type="button" data-block="block-van">👂 Văn</button>
+          <button class="chip" type="button" data-block="block-vanchan">💬 Vấn</button>
+          <button class="chip" type="button" data-block="block-thiet">✋ Thiết</button>
+        </div>
+
+        <!-- VỌNG -->
+        <div class="block active" id="block-vong">
+          <label for="vongText">Vọng chẩn (mô tả quan sát)</label>
+          <textarea id="vongText" placeholder="Ví dụ: sắc mặt nhợt, thần mệt, lưỡi nhạt rêu trắng, người phù nhẹ..."></textarea>
+          <p class="hint">Không dùng ảnh; mô tả bằng text để RAG/KG dễ chuẩn hoá.</p>
+        </div>
+
+        <!-- VĂN -->
+        <div class="block" id="block-van">
+          <label for="vanText">Văn chẩn (âm thanh, mùi…)</label>
+          <textarea id="vanText" placeholder="Ví dụ: tiếng nói nhỏ, hơi thở yếu, mùi miệng, ho khan/đờm..."></textarea>
+          <p class="hint">Bạn có thể chuẩn hoá thành từ khoá sau này (ontology).</p>
+        </div>
+
+        <!-- VẤN -->
+        <div class="block" id="block-vanchan">
+          <div class="vancard">
+            <div class="sym-toolbar">
+              <div style="flex:1; min-width:240px;">
+                <label for="qSymName">Triệu chứng (Vấn chẩn)</label>
+                <input id="qSymName" type="text" placeholder="Ví dụ: sợ lạnh / đau lưng / mất ngủ..." />
+              </div>
+              <div style="width:140px;">
+                <label for="qSymVAS">VAS (1–10)</label>
+                <input id="qSymVAS" type="number" min="1" max="10" step="1" value="5" />
+              </div>
+              <div style="flex:1; min-width:240px;">
+                <label for="qSymTime">Thời gian xuất hiện</label>
+                <input id="qSymTime" type="text" placeholder="Ví dụ: 2 tuần / 3 tháng / tái phát 1 năm..." />
+              </div>
+              <div class="row" style="margin-top:0;">
+                <button class="btn" id="btnAddSym" type="button">➕ Thêm</button>
+              </div>
+            </div>
+
+            <p class="hint">Mỗi dòng gồm: triệu chứng + VAS + thời gian. (Đây là nơi bạn từng nhầm; giờ đã đúng ở Vấn chẩn.)</p>
+            <div class="sym-list" id="qSymList"></div>
+
+            <div class="row">
+              <button class="btn secondary" id="btnImportFromText" type="button">↙️ Nhập nhanh từ text</button>
+              <span class="pill">Số triệu chứng: <span class="mono" id="qCount">0</span></span>
+            </div>
+
+            <div id="importBox" style="display:none; margin-top:10px;">
+              <label for="qImportText">Nhập nhanh (mỗi dòng 1 triệu chứng)</label>
+              <textarea id="qImportText" placeholder="- sợ lạnh&#10;- tay chân lạnh&#10;- mệt mỏi"></textarea>
+              <div class="row">
+                <button class="btn" id="btnApplyImport" type="button">✅ Áp dụng</button>
+                <button class="btn secondary" id="btnCancelImport" type="button">✖ Huỷ</button>
+              </div>
+              <p class="hint">Mặc định VAS=5, thời gian=“không rõ” (bạn có thể chỉnh từng dòng sau).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- THIẾT -->
+        <div class="block" id="block-thiet">
+          <label for="thietText">Thiết chẩn (mạch, ấn đau, sờ lạnh/nóng…)</label>
+          <textarea id="thietText" placeholder="Ví dụ: mạch trầm trì, ấn đau vùng thắt lưng, sờ chi lạnh..."></textarea>
+          <p class="hint">Có thể chuẩn hoá mạch tượng/ấn chẩn thành trường riêng sau này.</p>
+        </div>
+
+        <div class="row" style="margin-top:14px;">
+          <button class="btn" id="btnInfer" type="button">🧠 Suy luận &amp; xem chẩn đoán</button>
+          <span class="pill">BMI: <span class="mono" id="bmiValue">—</span></span>
+          <span class="pill">Trạng thái: <span class="mono" id="statusValue">Chưa suy luận</span></span>
+        </div>
+
+        <p class="hint">
+          Hiện gọi <span class="mono">POST /infer</span> (mock). Nếu API lỗi/không tồn tại, tự fallback sang demo rule-based trong browser.
+        </p>
+      </div>
+    </div>
+
+    <footer>
+      <b>Lưu ý:</b> Đây là công cụ hỗ trợ nghiên cứu/huấn luyện. Không thay thế chẩn đoán y khoa.
+    </footer>
+  </section>
+
+  <!-- TAB 2 -->
+  <section class="panel" id="panel-output" role="tabpanel" aria-labelledby="tab-output">
+    <div class="card">
+      <div class="result-top">
+        <div>
+          <h2 style="margin:0;">Kết quả chẩn đoán (sau suy luận)</h2>
+          <p class="hint" style="margin-top:6px;">Hiển thị top hội chứng + giải thích + câu hỏi bổ sung.</p>
+        </div>
+        <div class="pill">Hồ sơ: <span class="mono" id="profileSummary">—</span></div>
+      </div>
+
+      <div class="diag" id="bestDiag">
+        <h3>Chưa có kết quả</h3>
+        <p>Hãy nhập dữ liệu ở Tab 1 và bấm “Suy luận”.</p>
+      </div>
+
+      <ul class="list" id="rankList"></ul>
+
+      <div class="warn">
+        <b>Cảnh báo an toàn:</b> Nếu có dấu hiệu cấp cứu (đau ngực, khó thở, yếu liệt, lú lẫn, sốt cao kéo dài...), cần khám/cấp cứu ngay.
+      </div>
+
+      <footer>
+        Gợi ý nâng cấp: <span class="mono">/infer</span> → RAG (Supabase) + KG (symptom→syndrome) + constraint (incompatibility) + explanation by LLM.
+      </footer>
+    </div>
+  </section>
+</div>
+
+<script>
+  // ---------------- Tabs (main) ----------------
+  const tabInput = document.getElementById('tab-input');
+  const tabOutput = document.getElementById('tab-output');
+  const panelInput = document.getElementById('panel-input');
+  const panelOutput = document.getElementById('panel-output');
+
+  function setTab(which){
+    const isInput = which === 'input';
+    tabInput.setAttribute('aria-selected', String(isInput));
+    tabOutput.setAttribute('aria-selected', String(!isInput));
+    panelInput.classList.toggle('active', isInput);
+    panelOutput.classList.toggle('active', !isInput);
+  }
+  tabInput.addEventListener('click', () => setTab('input'));
+  tabOutput.addEventListener('click', () => setTab('output'));
+
+  // ---------------- Subtabs (Tứ chẩn) ----------------
+  const chips = Array.from(document.querySelectorAll('.chip'));
+  const blocks = {
+    "block-vong": document.getElementById("block-vong"),
+    "block-van": document.getElementById("block-van"),
+    "block-vanchan": document.getElementById("block-vanchan"),
+    "block-thiet": document.getElementById("block-thiet"),
+  };
+  function setBlock(id){
+    for(const c of chips){
+      c.classList.toggle("active", c.dataset.block === id);
+    }
+    for(const k of Object.keys(blocks)){
+      blocks[k].classList.toggle("active", k === id);
+    }
+  }
+  chips.forEach(c => c.addEventListener("click", () => setBlock(c.dataset.block)));
+
+  // ---------------- Fields ----------------
+  const elName = document.getElementById('name');
+  const elAge = document.getElementById('age');
+  const elSex = document.getElementById('sex');
+  const elWeight = document.getElementById('weight');
+  const elHeight = document.getElementById('height');
+  const elJob = document.getElementById('job');
+
+  const elVong = document.getElementById('vongText');
+  const elVan = document.getElementById('vanText');
+  const elThiet = document.getElementById('thietText');
+
+  const bmiValue = document.getElementById('bmiValue');
+  const statusValue = document.getElementById('statusValue');
+
+  const profileSummary = document.getElementById('profileSummary');
+  const bestDiag = document.getElementById('bestDiag');
+  const rankList = document.getElementById('rankList');
+
+  function computeBMI(){
+    const w = parseFloat(elWeight.value);
+    const hCm = parseFloat(elHeight.value);
+    if(!isFinite(w) || !isFinite(hCm) || w<=0 || hCm<=0) return null;
+    const h = hCm / 100;
+    const bmi = w / (h*h);
+    return Math.round(bmi * 10) / 10;
+  }
+  function updateBMIPill(){
+    const bmi = computeBMI();
+    bmiValue.textContent = (bmi === null) ? '—' : String(bmi);
+  }
+  elWeight.addEventListener('input', updateBMIPill);
+  elHeight.addEventListener('input', updateBMIPill);
+
+  // ---------------- Vấn chẩn list (VAS + time) ----------------
+  const qSymName = document.getElementById("qSymName");
+  const qSymVAS = document.getElementById("qSymVAS");
+  const qSymTime = document.getElementById("qSymTime");
+  const qSymList = document.getElementById("qSymList");
+  const qCount = document.getElementById("qCount");
+
+  const btnAddSym = document.getElementById("btnAddSym");
+  const btnImportFromText = document.getElementById("btnImportFromText");
+  const importBox = document.getElementById("importBox");
+  const qImportText = document.getElementById("qImportText");
+  const btnApplyImport = document.getElementById("btnApplyImport");
+  const btnCancelImport = document.getElementById("btnCancelImport");
+
+  /** @type {{id:string, name:string, vas:number, onset:string}[]} */
+  let qSymptoms = [];
+
+  function uid(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  function clamp(n, a, b){
+    return Math.max(a, Math.min(b, n));
+  }
+
+  function renderQList(){
+    qSymList.innerHTML = "";
+    qCount.textContent = String(qSymptoms.length);
+
+    if(qSymptoms.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.textContent = "Chưa có triệu chứng. Thêm ở trên hoặc nhập nhanh từ text.";
+      qSymList.appendChild(empty);
+      return;
+    }
+
+    for(const s of qSymptoms){
+      const wrap = document.createElement("div");
+      wrap.className = "sym-item";
+      wrap.dataset.id = s.id;
+
+      wrap.innerHTML = `
+        <div class="sym-head">
+          <p class="sym-name">${escapeHtml(s.name)}</p>
+          <div class="sym-actions">
+            <button class="icon-btn" type="button" data-act="dup">⎘</button>
+            <button class="icon-btn" type="button" data-act="del">🗑</button>
+          </div>
+        </div>
+        <div class="sym-grid">
+          <div>
+            <label>Triệu chứng</label>
+            <input data-field="name" value="${escapeHtmlAttr(s.name)}" />
+          </div>
+          <div>
+            <label>VAS (1–10)</label>
+            <input data-field="vas" type="number" min="1" max="10" step="1" value="${s.vas}" />
+          </div>
+          <div>
+            <label>Thời gian</label>
+            <input data-field="onset" value="${escapeHtmlAttr(s.onset)}" placeholder="Ví dụ: 2 tuần / 3 tháng..." />
+          </div>
+        </div>
+      `;
+
+      wrap.addEventListener("input", (e) => {
+        const t = e.target;
+        if(!(t instanceof HTMLInputElement)) return;
+        const id = wrap.dataset.id;
+        const item = qSymptoms.find(x => x.id === id);
+        if(!item) return;
+
+        const field = t.getAttribute("data-field");
+        if(field === "name"){
+          item.name = t.value.trim();
+        }else if(field === "vas"){
+          const v = clamp(parseInt(t.value || "5", 10), 1, 10);
+          item.vas = v;
+          t.value = String(v);
+        }else if(field === "onset"){
+          item.onset = t.value.trim();
+        }
+      });
+
+      wrap.addEventListener("click", (e) => {
+        const btn = e.target;
+        if(!(btn instanceof HTMLButtonElement)) return;
+        const act = btn.getAttribute("data-act");
+        if(!act) return;
+        const id = wrap.dataset.id;
+        if(act === "del"){
+          qSymptoms = qSymptoms.filter(x => x.id !== id);
+          renderQList();
+        }else if(act === "dup"){
+          const base = qSymptoms.find(x => x.id === id);
+          if(!base) return;
+          qSymptoms.unshift({ ...base, id: uid() });
+          renderQList();
+        }
+      });
+
+      qSymList.appendChild(wrap);
+    }
+  }
+
+  function addSym(name, vas, onset){
+    const n = (name || "").trim();
+    if(!n) return false;
+    const v = clamp(parseInt(String(vas || 5), 10), 1, 10);
+    const o = (onset || "").trim() || "không rõ";
+    qSymptoms.unshift({ id: uid(), name: n, vas: v, onset: o });
+    return true;
+  }
+
+  btnAddSym.addEventListener("click", () => {
+    const ok = addSym(qSymName.value, qSymVAS.value, qSymTime.value);
+    if(!ok){
+      alert("Nhập tên triệu chứng trước khi thêm.");
+      return;
+    }
+    qSymName.value = "";
+    qSymVAS.value = "5";
+    qSymTime.value = "";
+    renderQList();
+  });
+
+  btnImportFromText.addEventListener("click", () => {
+    importBox.style.display = (importBox.style.display === "none") ? "block" : "none";
+  });
+
+  btnCancelImport.addEventListener("click", () => {
+    importBox.style.display = "none";
+  });
+
+  btnApplyImport.addEventListener("click", () => {
+    const lines = (qImportText.value || "")
+      .split(/\n+/)
+      .map(x => x.replace(/[•\-\u2022]/g, " ").trim())
+      .filter(Boolean);
+
+    if(lines.length === 0){
+      alert("Chưa có dòng nào.");
+      return;
+    }
+    for(const ln of lines){
+      addSym(ln, 5, "không rõ");
+    }
+    qImportText.value = "";
+    importBox.style.display = "none";
+    renderQList();
+  });
+
+  // init qlist
+  renderQList();
+
+  // ---------------- Profile & payload ----------------
+  function formatProfile(){
+    const name = (elName.value || "").trim() || "—";
+    const age = (elAge.value || "").trim() ? `${elAge.value.trim()}t` : "—";
+    const sex = elSex.value;
+    const sexLabel = sex === "male" ? "Nam" : sex === "female" ? "Nữ" : sex === "other" ? "Khác" : "—";
+    const job = (elJob.value || "").trim() || "—";
+    const bmi = computeBMI();
+    const bmiText = (bmi === null) ? "BMI —" : `BMI ${bmi}`;
+    return `${name} · ${age} · ${sexLabel} · ${bmiText} · ${job}`;
+  }
+
+  function buildPayload(){
+    const patient = {
+      name: (elName.value || "").trim(),
+      age: Number(elAge.value || 0) || null,
+      sex: elSex.value || null,
+      weight_kg: Number(elWeight.value || 0) || null,
+      height_cm: Number(elHeight.value || 0) || null,
+      job: (elJob.value || "").trim() || null,
+      bmi: computeBMI()
+    };
+    const fourDx = {
+      vong_text: (elVong.value || "").trim(),
+      van_text: (elVan.value || "").trim(),
+      van_chung: qSymptoms.map(s => ({
+        symptom: s.name,
+        vas: s.vas,
+        onset: s.onset
+      })),
+      thiet_text: (elThiet.value || "").trim()
+    };
+    return { patient, fourDx, meta: { schema: "cbme-yhct-four-dx:v1" } };
+  }
+
+  function validateMinimum(){
+    const name = (elName.value || "").trim();
+    const age = (elAge.value || "").trim();
+    const sex = elSex.value;
+    if(!name || !age || !sex){
+      alert("Bạn vui lòng nhập tối thiểu: Họ tên + Tuổi + Giới.");
+      return false;
+    }
+    // require some evidence in either: vọng/văn/vấn/thiết
+    const anyText = (elVong.value || "").trim() || (elVan.value || "").trim() || (elThiet.value || "").trim();
+    if(qSymptoms.length === 0 && !anyText){
+      alert("Bạn vui lòng nhập ít nhất 1 thông tin Tứ chẩn (Vọng/Văn/Vấn/Thiết).");
+      return false;
+    }
+    return true;
+  }
+
+  // ---------------- Output render ----------------
+  function renderOutputFromApi(data){
+    // Expected shape:
+    // { best: { label, score, evidence[], questions[] }, ranked: [{label, score, evidence[]}], warnings[] }
+    profileSummary.textContent = formatProfile();
+
+    const best = data?.best;
+    if(!best){
+      bestDiag.innerHTML = `<h3>Chưa có kết quả</h3><p>API trả về không hợp lệ.</p>`;
+      rankList.innerHTML = "";
+      return;
+    }
+
+    const ev = Array.isArray(best.evidence) ? best.evidence : [];
+    const qs = Array.isArray(best.questions) ? best.questions : [];
+    const warns = Array.isArray(data.warnings) ? data.warnings : [];
+
+    bestDiag.innerHTML = `
+      <h3>Hội chứng gợi ý: ${escapeHtml(best.label || "—")}</h3>
+      <p><b>Điểm phù hợp:</b> ${escapeHtml(String(best.score ?? "—"))}</p>
+      <p style="margin-top:8px;color:var(--muted);font-size:12px;line-height:1.45;">
+        <b>Bằng chứng</b> (trích xuất từ Tứ chẩn):
+      </p>
+      <ul style="margin:8px 0 0; padding-left: 18px; color: var(--text); font-size: 13px; line-height:1.5;">
+        ${ev.length ? ev.map(x => `<li>${escapeHtml(x)}</li>`).join("") : "<li>—</li>"}
+      </ul>
+      <p style="margin-top:10px;color:var(--muted);font-size:12px;line-height:1.45;">
+        <b>Câu hỏi bổ sung</b>:
+      </p>
+      <ul style="margin:8px 0 0; padding-left: 18px; color: var(--text); font-size: 13px; line-height:1.5;">
+        ${qs.length ? qs.map(x => `<li>${escapeHtml(x)}</li>`).join("") : "<li>—</li>"}
+      </ul>
+      ${warns.length ? `
+        <div class="warn" style="margin-top:12px;">
+          <b>Gợi ý kiểm tra đối chứng/kiêm chứng:</b>
+          <div style="margin-top:6px;color:var(--muted);font-size:12px;line-height:1.45;">
+            ${warns.map(m => `• ${escapeHtml(m)}`).join("<br/>")}
+          </div>
+        </div>` : ""
+      }
+    `;
+
+    const ranked = Array.isArray(data.ranked) ? data.ranked : [];
+    rankList.innerHTML = "";
+    for(const r of ranked.slice(0, 6)){
+      const li = document.createElement("li");
+      li.className = "item";
+      const rEv = Array.isArray(r.evidence) ? r.evidence : [];
+      li.innerHTML = `
+        <p class="k"><span>${escapeHtml(r.label || "—")}</span><span class="score">score: ${escapeHtml(String(r.score ?? "—"))}</span></p>
+        <p class="v">Bằng chứng: ${rEv.length ? rEv.map(x => `<span class="mono">${escapeHtml(x)}</span>`).join(", ") : "—"}</p>
+      `;
+      rankList.appendChild(li);
+    }
+  }
+
+  // ---------------- Browser fallback demo (rule-based) ----------------
+  // (Giữ tinh thần code cũ của bạn để không bị “đứt” nếu API chưa có)
+  const KNOWLEDGE = [
+    {
+      label: "Thận dương hư / Dương hư (gợi ý)",
+      keywords: ["sợ lạnh","lạnh","tay chân lạnh","mệt mỏi","tiểu trong","tiểu nhiều","phù","đau lưng","lưỡi nhạt","rêu trắng"],
+      questions: [
+        "Bạn có sợ lạnh rõ, thích ấm, ưa chườm ấm không?",
+        "Tiểu trong nhiều/lâu? có phù nhẹ buổi sáng không?",
+        "Lưng gối mỏi lạnh, sinh lực giảm?"
+      ]
+    },
+    {
+      label: "Thận âm hư / Âm hư (gợi ý)",
+      keywords: ["nóng trong","triều nhiệt","ra mồ hôi trộm","khô miệng","khát","mất ngủ","bứt rứt","lưỡi đỏ","ít rêu","táo bón"],
+      questions: [
+        "Có nóng về chiều/đêm, ra mồ hôi trộm không?",
+        "Khô họng, khát, lưỡi đỏ ít rêu?",
+        "Mất ngủ, bứt rứt, táo bón?"
+      ]
+    },
+    {
+      label: "Tỳ khí hư (gợi ý)",
+      keywords: ["ăn kém","đầy bụng","chướng bụng","mệt sau ăn","đại tiện lỏng","tiêu chảy","lưỡi nhạt","rêu trắng"],
+      questions: [
+        "Ăn kém, đầy bụng, mệt sau ăn?",
+        "Đại tiện lỏng/tiêu chảy kéo dài?",
+        "Lưỡi nhạt rêu trắng, sắc mặt vàng?"
+      ]
+    },
+    {
+      label: "Can khí uất (gợi ý)",
+      keywords: ["căng tức ngực","sườn đau tức","thở dài","dễ cáu","stress","uất ức","đầy tức","đau đầu"],
+      questions: [
+        "Có hay thở dài, tức ngực/sườn, nặng khi stress?",
+        "Dễ cáu gắt, uất ức, ngủ kém?",
+        "Nữ: kinh nguyệt thất thường/đau bụng kinh?"
+      ]
+    }
+  ];
+
+  function normalizeText(t){
+    return String(t || "")
+      .toLowerCase()
+      .replace(/[•\-\u2022]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function buildEvidenceText(){
+    // Combine 4 parts into one searchable text (for fallback)
+    const vong = normalizeText(elVong.value);
+    const van = normalizeText(elVan.value);
+    const thiet = normalizeText(elThiet.value);
+    const vanChan = qSymptoms.map(s => normalizeText(s.name)).join(" ");
+    return [vong, van, vanChan, thiet].filter(Boolean).join(" ");
+  }
+
+  function inferFallback(){
+    const full = buildEvidenceText();
+    const ranked = KNOWLEDGE.map(k => {
+      let score = 0;
+      const hits = [];
+      for(const kw of k.keywords){
+        if(full.includes(kw)){
+          // Add weight from VAS if symptom was in Vấn chẩn
+          const fromQ = qSymptoms.find(s => normalizeText(s.name).includes(kw));
+          score += fromQ ? Math.max(1, Math.round(fromQ.vas / 3)) : 1;
+          hits.push(kw);
+        }
+      }
+      return { label: k.label, score, evidence: hits.slice(0, 10), questions: k.questions };
+    }).sort((a,b)=>b.score-a.score);
+
+    const best = ranked[0];
+    return {
+      best: {
+        label: best?.label || "Chưa đủ dữ liệu",
+        score: best?.score ?? 0,
+        evidence: best?.evidence?.length ? best.evidence.map(x=>`Khớp: ${x}`) : ["—"],
+        questions: best?.questions || []
+      },
+      ranked: ranked.slice(0, 5).map(r => ({ label: r.label, score: r.score, evidence: r.evidence })),
+      warnings: []
+    };
+  }
+
+  // ---------------- API call (/infer) ----------------
+  async function callInferApi(payload){
+    const res = await fetch("/infer", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const t = await res.text().catch(()=> "");
+      throw new Error(`HTTP ${res.status} ${res.statusText} ${t}`.trim());
+    }
+    return await res.json();
+  }
+
+  // ---------------- Buttons ----------------
+  const btnInfer = document.getElementById('btnInfer');
+  const btnClear = document.getElementById('btnClear');
+  const btnFillDemo = document.getElementById('btnFillDemo');
+
+  btnInfer.addEventListener('click', async () => {
+    if(!validateMinimum()){
+      statusValue.textContent = "Thiếu dữ liệu tối thiểu";
+      return;
+    }
+    updateBMIPill();
+    statusValue.textContent = "Đang suy luận...";
+
+    const payload = buildPayload();
+
+    try{
+      // Try API first
+      const data = await callInferApi(payload);
+      renderOutputFromApi(data);
+      statusValue.textContent = "Đã suy luận (API)";
+      setTab('output');
+    }catch(err){
+      // Fallback to browser demo
+      console.warn("Infer API failed, fallback:", err);
+      const data = inferFallback();
+      renderOutputFromApi(data);
+      statusValue.textContent = "Đã suy luận (fallback)";
+      setTab('output');
+      alert("API /infer chưa chạy hoặc lỗi. Hệ thống dùng fallback demo trong trình duyệt.");
+    }
+  });
+
+  btnClear.addEventListener('click', () => {
+    elName.value = "";
+    elAge.value = "";
+    elSex.value = "";
+    elWeight.value = "";
+    elHeight.value = "";
+    elJob.value = "";
+    elVong.value = "";
+    elVan.value = "";
+    elThiet.value = "";
+
+    qSymptoms = [];
+    renderQList();
+
+    updateBMIPill();
+    statusValue.textContent = "Chưa suy luận";
+    profileSummary.textContent = "—";
+    bestDiag.innerHTML = `<h3>Chưa có kết quả</h3><p>Hãy nhập dữ liệu ở Tab 1 và bấm “Suy luận”.</p>`;
+    rankList.innerHTML = "";
+    setTab('input');
+    setBlock("block-vong");
+  });
+
+  btnFillDemo.addEventListener('click', () => {
+    elName.value = "Nguyễn Văn A";
+    elAge.value = "52";
+    elSex.value = "male";
+    elWeight.value = "68";
+    elHeight.value = "170";
+    elJob.value = "Nhân viên văn phòng";
+
+    elVong.value = "Sắc mặt nhợt, lưỡi nhạt rêu trắng, thần mệt.";
+    elVan.value = "Tiếng nói nhỏ, hơi thở yếu.";
+    elThiet.value = "Mạch trầm trì, sờ chi lạnh.";
+
+    qSymptoms = [];
+    addSym("sợ lạnh", 7, "3 tháng");
+    addSym("tay chân lạnh", 6, "3 tháng");
+    addSym("mệt mỏi", 6, "2 tháng");
+    addSym("tiểu trong nhiều", 5, "1 tháng");
+    addSym("đau lưng mỏi gối", 6, "6 tháng");
+    renderQList();
+
+    updateBMIPill();
+    statusValue.textContent = "Đã điền dữ liệu mẫu";
+    setBlock("block-vanchan");
+  });
+
+  // ---------------- Small helpers ----------------
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeHtmlAttr(str){
+    return escapeHtml(str).replaceAll('"','&quot;');
+  }
+
+  // Init
+  updateBMIPill();
+</script>
+</body>
 </html>
