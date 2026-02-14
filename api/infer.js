@@ -1,31 +1,89 @@
+import { getSupabaseAdmin } from "../backend/api/supabaseClient.js";
+import { infer } from "../backend/reasoning/inferencePipeline.js";
+
+// ---------- CORS ----------
+function setCors(res) {
+  // Nếu bạn muốn khóa domain, thay "*" bằng domain Vercel của bạn
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Max-Age", "86400");
+}
+
+function sendJson(res, status, payload) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(payload));
+}
+
+function safeError(err) {
+  return {
+    message: err?.message || "Unknown error",
+    name: err?.name || "Error",
+  };
+}
+
+// ---------- Handler ----------
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
+  setCors(res);
+
+  // Preflight
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    return res.end();
   }
 
-  const body = req.body || {};
-  const q = body?.fourDx?.van_chung || [];
+  if (req.method !== "POST") {
+    return sendJson(res, 405, { ok: false, error: { message: "Method not allowed" } });
+  }
 
-  // Mock: lấy vài triệu chứng để làm evidence
-  const evidence = q.slice(0, 4).map(x => `Vấn: ${x.symptom} (VAS ${x.vas}, ${x.onset})`);
+  try {
+    // Parse JSON body (Vercel Node runtime usually parses req.body already,
+    // but we handle both cases robustly)
+    let body = req.body;
+    if (!body || typeof body === "string") {
+      body = body ? JSON.parse(body) : {};
+    }
 
-  res.status(200).json({
-    best: {
-      label: "Thận dương hư (mock)",
-      score: 0.78,
-      evidence: evidence.length ? evidence : ["Chưa có dữ liệu vấn chẩn"],
-      questions: [
-        "Bạn có sợ lạnh rõ, thích ấm không?",
-        "Tiểu trong nhiều? có phù nhẹ buổi sáng không?",
-        "Lưng gối mỏi lạnh, sinh lực giảm?"
-      ]
-    },
-    ranked: [
-      { label: "Thận dương hư (mock)", score: 0.78, evidence },
-      { label: "Tỳ khí hư (mock)", score: 0.41, evidence: ["Gợi ý: đầy bụng/ăn kém?"] },
-      { label: "Can khí uất (mock)", score: 0.25, evidence: ["Gợi ý: căng tức ngực/sườn?"] }
-    ],
-    warnings: []
-  });
+    // ---- Expected payload from UI ----
+    // Minimal MVP:
+    // {
+    //   encounterId: "uuid-optional",
+    //   symptomIds: ["uuid1","uuid2",...],
+    //   meta: { age, sex, bmi, job }
+    // }
+    const caseData = {
+      encounterId: body.encounterId || null,
+      symptomIds: Array.isArray(body.symptomIds) ? body.symptomIds : [],
+      meta: body.meta || {},
+      // bạn có thể gửi thêm raw FourDx text để log sau:
+      fourdx: body.fourdx || null,
+    };
+
+    const supabase = getSupabaseAdmin();
+
+    const result = await infer(supabase, caseData);
+
+    // (Tuỳ chọn) log vào inference_run nếu bạn đã tạo bảng
+    // Nếu chưa tạo bảng thì cứ comment đoạn này.
+    try {
+      if (caseData.encounterId && result?.best?.syndrome_id) {
+        await supabase.from("inference_run").insert({
+          encounter_id: caseData.encounterId,
+          syndrome_id: result.best.syndrome_id,
+          score: result.best.score ?? null,
+          evidence: result.best.evidence ?? [],
+          questions: result.questions ?? [],
+        });
+      }
+    } catch (logErr) {
+      // Không làm fail request nếu log lỗi
+      // Bạn có thể bật debug khi cần:
+      // console.error("inference_run insert failed", logErr);
+    }
+
+    return sendJson(res, 200, { ok: true, data: result });
+  } catch (err) {
+    return sendJson(res, 500, { ok: false, error: safeError(err) });
+  }
 }
